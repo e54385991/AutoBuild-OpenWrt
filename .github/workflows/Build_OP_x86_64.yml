@@ -21,6 +21,7 @@ on:
   #watch:
   #  types: [started]
 
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -58,16 +59,23 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
 
-    - name: add feeds
+    - name: Clone source code
       env: 
         REPO_URL: https://github.com/coolsnowwolf/lede
         REPO_BRANCH: master
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
-        echo "src-git PWpackages https://github.com/xiaorouji/openwrt-passwall.git;packages" >> ./feeds.conf.default
-        echo "src-git PWluci https://github.com/xiaorouji/openwrt-passwall.git;luci" >> ./feeds.conf.default
-        echo "kenzo https://github.com/kenzok8/openwrt-packages" >> ./feeds.conf.default
+        sed -i '$a src-git kenzo https://github.com/kenzok8/openwrt-packages' ./feeds.conf.default
+        
+    - name: Update & Install feeds
+      working-directory: ./openwrt
+      run: |
+        git pull
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        ./scripts/feeds install -a
+
     #- name: Import external feeds - passwall
     #  working-directory: ./openwrt
     #  run: |
@@ -78,14 +86,7 @@ jobs:
     #  working-directory: ./openwrt
     #  run: |
     #    git clone -b 18.06 https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon-jerrykuku
-        
-    - name: Update & Install feeds
-      working-directory: ./openwrt
-      run: |
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-        ./scripts/feeds install -a
-        
+
     - name: Configuration Customization - Build_x86_64
       env:
         CONFIG_FILE: 'x86_64.config'
